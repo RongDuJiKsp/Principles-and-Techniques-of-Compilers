@@ -58,7 +58,7 @@ impl DeterministicFiniteAutomaton {
                     let mut diff_end_states: Vec<(HashSet<State>, HashSet<State>)> = Vec::new();//(Target State,Trans State)
                     for state in group {
                         if let Some(this_trans) = self.trans.get(&TransFunc::new(state.clone(), *alpha)) {
-                            if let Some((_target, trans)) = diff_end_states.iter_mut().find(|&(target, _trans)| target.contains(this_trans)) {
+                            if let Some((_target, trans)) = diff_end_states.iter_mut().find(|(target, _trans)| target.contains(this_trans)) {
                                 trans.insert(state.clone());
                             } else {
                                 let new_group = (HashSet::from([this_trans.clone()]), HashSet::from([state.clone()]));
@@ -76,23 +76,22 @@ impl DeterministicFiniteAutomaton {
             }
             swap(&mut next_divided_set, &mut divided_set);
         };
-        let mut states = HashSet::new();
-        let mut new_divided_map = HashMap::new();
-        for group_list in divided_set.into_iter().map(|x| x.into_iter().collect::<Vec<_>>()) {
+        let (states,new_divided_map)=divided_set.into_iter().map(|x| x.into_iter().collect::<Vec<_>>()).fold((HashSet::new(),HashMap::new()),|(mut state,mut new_map),group_list|{
             let mut group_iter = group_list.into_iter();
             let symbol = group_iter.next().unwrap();
             while let Some(other) = group_iter.next() {
-                new_divided_map.insert(other, symbol.clone());
+                new_map.insert(other, symbol.clone());
             }
-            states.insert(symbol);
-        };
+            state.insert(symbol);
+            (state,new_map)
+        });
 
         Self {
             alpha: self.alpha.clone(),
             state: states,
             start_state:new_divided_map.get(&self.start_state).unwrap().clone(),
-            end_state_set: Default::default(),
-            trans: Default::default(),
+            end_state_set: self.end_state_set.iter().map(|end|new_divided_map.get(end).unwrap().clone()).collect(),
+            trans: self.trans.iter().map(|(trans_func,target)|(TransFunc::new(new_divided_map.get(&trans_func.now_state).unwrap().clone(),trans_func.input_alpha),new_divided_map.get(target).unwrap().clone())).collect::<HashMap<_,_>>()
         }
     }
 }
