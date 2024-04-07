@@ -1,12 +1,16 @@
-use std::env::Args;
+use std::vec::IntoIter;
 use crate::deterministic_finite_automaton::{DeterministicFiniteAutomaton};
 
-pub fn main_application(mut args: Args) {
+type StringArgs = IntoIter<String>;
+
+pub fn main_application(mut args: StringArgs) {
     args.next();
     match args.next() {
         Some(arg) => {
             match arg.as_str() {
-                "--sp_dfa" => { sp_dfa(args) }
+                "--sp_dfa" => {
+                    sp_dfa(args)
+                }
                 _ => {}
             }
         }
@@ -20,7 +24,7 @@ pub fn main_application(mut args: Args) {
     }
 }
 
-fn sp_dfa(mut args: Args) {
+fn sp_dfa(mut args: StringArgs) {
     let (mut alpha, mut state_set, mut start_state, mut end_state_set, mut trans) = (Default::default(), Default::default(), Default::default(), Default::default(), Default::default());
     while let Some(command) = args.next() {
         if let Some(value) = args.next() {
