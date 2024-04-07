@@ -37,8 +37,6 @@ impl DeterministicFiniteAutomaton {
             }
             grammar.insert(func, targ);
         }
-        dbg!("end!");
-        grammar = dbg!(grammar);
         if !state.contains(&start_state) {
             return Err(());
         }
