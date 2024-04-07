@@ -1,7 +1,5 @@
-use std::arch::x86_64::_lzcnt_u32;
-use std::collections::{HashMap, HashSet};
 use std::env::Args;
-use crate::deterministic_finite_automaton::{DeterministicFiniteAutomaton, State};
+use crate::deterministic_finite_automaton::{DeterministicFiniteAutomaton};
 
 pub fn main_application(mut args: Args) {
     args.next();
@@ -49,11 +47,6 @@ fn sp_dfa(mut args: Args) {
             panic!("excepted value of param {command}");
         }
     };
-    alpha=dbg!(alpha);
-    state_set=dbg!(state_set);
-    start_state=dbg!(start_state);
-    end_state_set=dbg!(end_state_set);
-    trans=dbg!(trans);
     let dfa = DeterministicFiniteAutomaton::build(alpha, state_set, start_state, end_state_set, trans).expect("创建DFA失败，请检查参数是否合法！");
     dbg!(dfa);
 }

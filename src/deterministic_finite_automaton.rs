@@ -7,11 +7,6 @@ pub struct TransFunc {
     input_alpha: char,
 }
 
-#[derive(Eq, PartialEq, Copy, Clone, Hash, Debug, Default)]
-pub struct State {
-    label: char,
-    acceptable: bool,
-}
 
 impl TransFunc {
     pub fn new(now_state: State, input_alpha: char) -> Self {
@@ -19,12 +14,7 @@ impl TransFunc {
     }
 }
 
-impl State {
-    pub fn new(label: char, acceptable: bool) -> Self {
-        State { label, acceptable }
-    }
-}
-
+type State = char;
 type AlphaTable = HashSet<char>;
 type StateSet = HashSet<State>;
 type GrammarFunction = HashMap<TransFunc, State>;
@@ -42,21 +32,13 @@ impl DeterministicFiniteAutomaton {
     pub fn build(alpha: AlphaTable, state: StateSet, start_state: State, end_state_set: StateSet, trans: GrammarFunction) -> Result<Self, ()> {
         let mut grammar: GrammarFunction = HashMap::new();
         for (mut func, mut targ) in trans.into_iter() {
-
-            if end_state_set.contains(&func.now_state) {
-                func.now_state.acceptable = true;
-            }
-
-            if end_state_set.contains(&targ) {
-                targ.acceptable = true;
-            }
             if !state.contains(&func.now_state) || !state.contains(&targ) || !alpha.contains(&func.input_alpha) {
                 return Err(());
             }
             grammar.insert(func, targ);
         }
         dbg!("end!");
-        grammar=dbg!(grammar);
+        grammar = dbg!(grammar);
         if !state.contains(&start_state) {
             return Err(());
         }
@@ -83,11 +65,11 @@ impl DeterministicFiniteAutomaton {
         let mut end_states: StateSet = HashSet::new();
         for state in states.split(",") {
             if state.len() == 2 {
-                let this_state = State::new(state.chars().nth(1).unwrap().to_ascii_uppercase(), true);
+                let this_state = state.chars().nth(1).unwrap().to_ascii_uppercase();
                 state_set.insert(this_state.clone());
                 end_states.insert(this_state);
             } else if state.len() == 1 {
-                let this_state = State::new(state.chars().nth(0).unwrap().to_ascii_uppercase(), false);
+                let this_state = state.chars().nth(0).unwrap().to_ascii_uppercase();
                 state_set.insert(this_state);
             } else {
                 return Err(());
@@ -104,16 +86,16 @@ impl DeterministicFiniteAutomaton {
              left_pat.next().unwrap().chars().nth(0).unwrap().to_ascii_lowercase(),
              whole_pat.next().unwrap().chars().nth(0).unwrap().to_ascii_uppercase())
         }) {
-            grammar.insert(TransFunc::new(State::new(left, false), trans), State::new(right, false));
+            grammar.insert(TransFunc::new(left, trans), right);
         }
         Ok(grammar)
     }
     pub fn parse_start_state(start: String) -> Result<State, ()> {
         if start.len() == 2 {
-            let this_state = State::new(start.chars().nth(1).unwrap().to_ascii_uppercase(), true);
+            let this_state = start.chars().nth(1).unwrap().to_ascii_uppercase();
             Ok(this_state)
         } else if start.len() == 1 {
-            let this_state = State::new(start.chars().nth(0).unwrap().to_ascii_uppercase(), false);
+            let this_state = start.chars().nth(0).unwrap().to_ascii_uppercase();
             Ok(this_state)
         } else {
             Err(())
