@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::mem::swap;
 
-#[derive(Eq, PartialEq, Copy, Clone, Hash, Debug, Default)]
+#[derive(Eq, PartialEq, Clone, Hash, Debug, Default)]
 pub struct TransFunc {
     now_state: State,
     input_alpha: char,
@@ -19,7 +19,7 @@ type AlphaTable = HashSet<char>;
 type StateSet = HashSet<State>;
 type GrammarFunction = HashMap<TransFunc, State>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DeterministicFiniteAutomaton {
     alpha: AlphaTable,
     state: StateSet,
@@ -31,11 +31,11 @@ pub struct DeterministicFiniteAutomaton {
 impl DeterministicFiniteAutomaton {
     pub fn build(alpha: AlphaTable, state: StateSet, start_state: State, end_state_set: StateSet, trans: GrammarFunction) -> Result<Self, ()> {
         let mut grammar: GrammarFunction = HashMap::new();
-        for (mut func, mut targ) in trans.into_iter() {
-            if !state.contains(&func.now_state) || !state.contains(&targ) || !alpha.contains(&func.input_alpha) {
+        for (func, target) in trans.into_iter() {
+            if !state.contains(&func.now_state) || !state.contains(&target) || !alpha.contains(&func.input_alpha) {
                 return Err(());
             }
-            grammar.insert(func, targ);
+            grammar.insert(func, target);
         }
         if !state.contains(&start_state) {
             return Err(());
