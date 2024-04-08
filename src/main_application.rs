@@ -1,7 +1,8 @@
-use std::vec::IntoIter;
-use crate::deterministic_finite_automaton::{DeterministicFiniteAutomaton};
+use std::io::stdin;
 
-type StringArgs = IntoIter<String>;
+use crate::living_dfa::LivingDFA;
+use crate::r#type::StringArgs;
+use crate::utils::build_dfa_with_command_args;
 
 pub fn main_application(mut args: StringArgs) {
     args.next();
@@ -11,46 +12,65 @@ pub fn main_application(mut args: StringArgs) {
                 "--sp_dfa" => {
                     sp_dfa(args)
                 }
+                "--trans_dfa" => {
+                    trans_dfa(args)
+                }
                 _ => {}
             }
         }
         None => {
-            println!("This is The Menu of Comp\
-            The first param is function \
-            Projects supported are:  \
-            simplify DFA -> --sp_dfa \
+            panic!("This is The Menu of Comp
+            The first param is function
+            Projects supported are:
+            simplify DFA -> --sp_dfa
+            trans DFA -> --trans_dfa
+
             ")
         }
     }
 }
 
-fn sp_dfa(mut args: StringArgs) {
-    let (mut alpha, mut state_set, mut start_state, mut end_state_set, mut trans) = (Default::default(), Default::default(), Default::default(), Default::default(), Default::default());
-    while let Some(command) = args.next() {
-        if let Some(value) = args.next() {
-            match command.as_str() {
-                "--alpha" => {
-                    alpha = DeterministicFiniteAutomaton::parse_alpha_table(value).expect("字母表解析失败，请检查参数");
+fn sp_dfa(args: StringArgs) {
+    let dfa = build_dfa_with_command_args(args);
+    dbg!(dfa.simplify());
+}
+
+fn trans_dfa(args: StringArgs) {
+    let mut living_dfa = LivingDFA::init(build_dfa_with_command_args(args));
+    println!("dfa read");
+    loop {
+        let mut next_sec = String::new();
+        stdin().read_line(&mut next_sec).expect("err");
+        if next_sec.len() == 0 {
+            break;
+        }
+        let mut iter = next_sec.trim().chars().peekable();
+        if let Some(front_char) = iter.peek() {
+            if *front_char == '#' {
+                match iter.collect::<String>().as_str() {
+                    "#reset" => {
+                        living_dfa.reset();
+                        println!(" dfa已重置！");
+                    }
+                    _ => {
+                        println!("未知的指令！")
+                    }
                 }
-                "--set" => {
-                    let res = DeterministicFiniteAutomaton::parse_state_set(value).expect("状态集解析失败，请检查参数");
-                    state_set = res.0;
-                    end_state_set = res.1;
-                }
-                "--start" => {
-                    start_state = DeterministicFiniteAutomaton::parse_start_state(value).expect("初始状态解析失败，请检查参数");
-                }
-                "--trans" => {
-                    trans = DeterministicFiniteAutomaton::parse_trans(value).expect("状态转移函数解析失败，请检查参数");
-                }
-                _ => {
-                    println!("未知的子命令！")
+                continue;
+            }
+        }
+        match living_dfa.trans_with_str(iter) {
+            Ok(is_ac) => {
+                if is_ac {
+                    println!("该字符串已被接受")
+                } else {
+                    println!("该字符串暂时未被接受")
                 }
             }
-        } else {
-            panic!("excepted value of param {command}");
+            Err(index) => {
+                println!("该字符串不被接受于line:{index}，dfa已重置");
+                living_dfa.reset();
+            }
         }
-    };
-    let dfa = DeterministicFiniteAutomaton::build(alpha, state_set, start_state, end_state_set, trans).expect("创建DFA失败，请检查参数是否合法！");
-    dbg!(dfa.simplify());
+    }
 }

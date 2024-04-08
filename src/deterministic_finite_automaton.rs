@@ -15,10 +15,10 @@ impl TransFunc {
     }
 }
 
-type State = char;
-type AlphaTable = HashSet<char>;
-type StateSet = HashSet<State>;
-type GrammarFunction = HashMap<TransFunc, State>;
+pub type State = char;
+pub type AlphaTable = HashSet<char>;
+pub type StateSet = HashSet<State>;
+pub type GrammarFunction = HashMap<TransFunc, State>;
 
 #[derive(Debug, Clone)]
 pub struct DeterministicFiniteAutomaton {
@@ -163,5 +163,20 @@ impl DeterministicFiniteAutomaton {
             }
         }
         return calculate_dfa_by_state_set(split_state_set(self), self);
+    }
+    pub fn alpha(&self) -> &AlphaTable {
+        &self.alpha
+    }
+    pub fn state(&self) -> &StateSet {
+        &self.state
+    }
+    pub fn start_state(&self) -> State {
+        self.start_state
+    }
+    pub fn end_state_set(&self) -> &StateSet {
+        &self.end_state_set
+    }
+    pub fn trans(&self) -> &GrammarFunction {
+        &self.trans
     }
 }
