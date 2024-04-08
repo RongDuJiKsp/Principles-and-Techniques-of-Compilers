@@ -30,6 +30,7 @@ pub struct DeterministicFiniteAutomaton {
 }
 
 impl DeterministicFiniteAutomaton {
+    //根据给定的集合创建编译器
     pub fn build(alpha: AlphaTable, state: StateSet, start_state: State, end_state_set: StateSet, trans: GrammarFunction) -> Result<Self, ()> {
         let mut grammar: GrammarFunction = HashMap::new();
         for (func, target) in trans.into_iter() {
