@@ -52,6 +52,5 @@ fn sp_dfa(mut args: StringArgs) {
         }
     };
     let dfa = DeterministicFiniteAutomaton::build(alpha, state_set, start_state, end_state_set, trans).expect("创建DFA失败，请检查参数是否合法！");
-    dbg!(dfa.clone());
     dbg!(dfa.simplify());
 }

@@ -105,45 +105,48 @@ impl DeterministicFiniteAutomaton {
         divided_set.push(self.state.difference(&self.end_state_set).map(|x| x.clone()).collect::<HashSet<_>>());
         loop {
             let mut next_divided_set = Vec::new();
-            for group in &divided_set {
+            let state_group_map = divided_set.iter().enumerate().flat_map(|(index, set)| set.clone().into_iter().map(move |x| (x, index.clone()))).collect::<HashMap<_, _>>();
+            for group in divided_set.clone() {
+                let this_group_size = group.len();
+                let mut grouped_set_map = HashMap::new();
                 for alpha in &self.alpha {
-                    let mut diff_end_states: Vec<(HashSet<State>, HashSet<State>)> = Vec::new();//(Target State,Trans State)
-                    for state in group {
-                        if let Some(this_trans) = self.trans.get(&TransFunc::new(state.clone(), *alpha)) {
-                            if let Some((_target, trans)) = diff_end_states.iter_mut().find(|(target, _trans)| target.contains(this_trans)) {
-                                trans.insert(state.clone());
-                            } else {
-                                let new_group = (HashSet::from([this_trans.clone()]), HashSet::from([state.clone()]));
-                                diff_end_states.push(new_group);
-                            }
+                    grouped_set_map.clear();
+                    for start_state in &group {
+                        let this_trans = TransFunc::new(start_state.clone(), alpha.clone());
+                        if let Some(target_state) = self.trans.get(&this_trans) {
+                            grouped_set_map.entry(state_group_map[target_state]).or_insert(HashSet::new()).insert(this_trans.now_state);
+                        } else {
+                            panic!("找不到对应的转换函数，该自动机可能是未完全定义的有限自动机");
                         }
                     }
-                    for (_target, trans) in diff_end_states {
-                        next_divided_set.push(trans);
+                    if grouped_set_map.len() != this_group_size {
+                        break;
                     }
                 }
+                grouped_set_map.into_values().for_each(|v| next_divided_set.push(v));
             }
             if next_divided_set.len() == divided_set.len() {
                 break;
             }
             swap(&mut next_divided_set, &mut divided_set);
         };
-        let (states, new_divided_map) = divided_set.into_iter().map(|x| x.into_iter().collect::<Vec<_>>()).fold((HashSet::new(), HashMap::new()), |(mut state, mut new_map), group_list| {
+        let new_divided_map = divided_set.into_iter().fold(HashMap::new(), |mut new_map, group_list| {
             let mut group_iter = group_list.into_iter();
             let symbol = group_iter.next().unwrap();
             while let Some(other) = group_iter.next() {
                 new_map.insert(other, symbol.clone());
             }
-            state.insert(symbol);
-            (state, new_map)
+            new_map
         });
-
+        let get_mapped_state = |original_state: State| {
+            if let Some(rep_state) = new_divided_map.get(&original_state) { rep_state.clone() } else { original_state }
+        };
         Self {
             alpha: self.alpha.clone(),
-            state: states,
-            start_state: new_divided_map.get(&self.start_state).unwrap().clone(),
-            end_state_set: self.end_state_set.iter().map(|end| new_divided_map.get(end).unwrap().clone()).collect(),
-            trans: self.trans.iter().map(|(trans_func, target)| (TransFunc::new(new_divided_map.get(&trans_func.now_state).unwrap().clone(), trans_func.input_alpha), new_divided_map.get(target).unwrap().clone())).collect::<HashMap<_, _>>(),
+            state: self.state.clone().into_iter().map(|x| get_mapped_state(x)).collect(),
+            start_state: get_mapped_state(self.start_state.clone()),
+            end_state_set: self.end_state_set.iter().map(|end| get_mapped_state(end.clone())).collect(),
+            trans: self.trans.iter().map(|(trans_func, target)| (TransFunc::new(get_mapped_state(trans_func.now_state.clone()), trans_func.input_alpha.clone()), get_mapped_state(target.clone()))).collect::<HashMap<_, _>>(),
         }
     }
 }
