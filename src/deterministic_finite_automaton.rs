@@ -101,53 +101,60 @@ impl DeterministicFiniteAutomaton {
         }
     }
     pub fn simplify(&self) -> Self {
-        let mut divided_set = Vec::new();
-        divided_set.push(self.end_state_set.clone());
-        divided_set.push(self.state.difference(&self.end_state_set).map(|x| x.clone()).collect::<HashSet<_>>());
-        loop {
-            let mut next_divided_set = Vec::new();
-            let state_group_map = divided_set.iter().enumerate().flat_map(|(index, set)| set.clone().into_iter().map(move |x| (x, index.clone()))).collect::<HashMap<_, _>>();
-            for group in divided_set.clone() {
-                let this_group_size = group.len();
-                let mut grouped_set_map = HashMap::new();
-                for alpha in &self.alpha {
-                    grouped_set_map.clear();
-                    for start_state in &group {
-                        let this_trans = TransFunc::new(start_state.clone(), alpha.clone());
-                        if let Some(target_state) = self.trans.get(&this_trans) {
-                            grouped_set_map.entry(state_group_map[target_state]).or_insert(HashSet::new()).insert(this_trans.now_state);
-                        } else {
-                            panic!("找不到对应的转换函数，该自动机可能是未完全定义的有限自动机");
+        fn split_state_set(automaton: &DeterministicFiniteAutomaton) -> Vec<StateSet> {
+            let mut divided_set = Vec::new();
+            divided_set.push(automaton.end_state_set.clone());
+            divided_set.push(automaton.state.difference(&automaton.end_state_set).map(|x| x.clone()).collect::<HashSet<_>>());
+            loop {
+                let mut next_divided_set = Vec::new();
+                let state_group_map = divided_set.iter().enumerate().flat_map(|(index, set)| set.clone().into_iter().map(move |x| (x, index.clone()))).collect::<HashMap<_, _>>();
+                for group in divided_set.clone() {
+                    let this_group_size = group.len();
+                    let mut grouped_set_map = HashMap::new();
+                    for alpha in &automaton.alpha {
+                        grouped_set_map.clear();
+                        for start_state in &group {
+                            let this_trans = TransFunc::new(start_state.clone(), alpha.clone());
+                            if let Some(target_state) = automaton.trans.get(&this_trans) {
+                                grouped_set_map.entry(state_group_map[target_state]).or_insert(HashSet::new()).insert(this_trans.now_state);
+                            } else {
+                                panic!("找不到对应的转换函数，该自动机可能是未完全定义的有限自动机");
+                            }
+                        }
+                        if grouped_set_map.len() != this_group_size {
+                            break;
                         }
                     }
-                    if grouped_set_map.len() != this_group_size {
-                        break;
-                    }
+                    grouped_set_map.into_values().for_each(|v| next_divided_set.push(v));
                 }
-                grouped_set_map.into_values().for_each(|v| next_divided_set.push(v));
-            }
-            if next_divided_set.len() == divided_set.len() {
-                break;
-            }
-            swap(&mut next_divided_set, &mut divided_set);
-        };
-        let new_divided_map = divided_set.into_iter().map(|x| collect_ordered_vec(x)).fold(HashMap::new(), |mut new_map, group_list| {
-            let mut group_iter = group_list.into_iter();
-            let symbol = group_iter.next().unwrap();
-            while let Some(other) = group_iter.next() {
-                new_map.insert(other, symbol.clone());
-            }
-            new_map
-        });
-        let get_mapped_state = |original_state: State| {
-            if let Some(rep_state) = new_divided_map.get(&original_state) { rep_state.clone() } else { original_state }
-        };
-        Self {
-            alpha: self.alpha.clone(),
-            state: self.state.clone().into_iter().map(|x| get_mapped_state(x)).collect(),
-            start_state: get_mapped_state(self.start_state.clone()),
-            end_state_set: self.end_state_set.iter().map(|end| get_mapped_state(end.clone())).collect(),
-            trans: self.trans.iter().map(|(trans_func, target)| (TransFunc::new(get_mapped_state(trans_func.now_state.clone()), trans_func.input_alpha.clone()), get_mapped_state(target.clone()))).collect::<HashMap<_, _>>(),
+                if next_divided_set.len() == divided_set.len() {
+                    break;
+                }
+                swap(&mut next_divided_set, &mut divided_set);
+            };
+            divided_set
         }
+
+        fn calculate_dfa_by_state_set(state_set: Vec<StateSet>, original_dfa: &DeterministicFiniteAutomaton) -> DeterministicFiniteAutomaton {
+            let new_divided_map = state_set.into_iter().map(|x| collect_ordered_vec(x)).fold(HashMap::new(), |mut new_map, group_list| {
+                let mut group_iter = group_list.into_iter();
+                let symbol = group_iter.next().unwrap();
+                while let Some(other) = group_iter.next() {
+                    new_map.insert(other, symbol.clone());
+                }
+                new_map
+            });
+            let get_mapped_state = |original_state: State| {
+                if let Some(rep_state) = new_divided_map.get(&original_state) { rep_state.clone() } else { original_state }
+            };
+            DeterministicFiniteAutomaton {
+                alpha: original_dfa.alpha.clone(),
+                state: original_dfa.state.clone().into_iter().map(|x| get_mapped_state(x)).collect(),
+                start_state: get_mapped_state(original_dfa.start_state.clone()),
+                end_state_set: original_dfa.end_state_set.iter().map(|end| get_mapped_state(end.clone())).collect(),
+                trans: original_dfa.trans.iter().map(|(trans_func, target)| (TransFunc::new(get_mapped_state(trans_func.now_state.clone()), trans_func.input_alpha.clone()), get_mapped_state(target.clone()))).collect::<HashMap<_, _>>(),
+            }
+        }
+        return calculate_dfa_by_state_set(split_state_set(self), self);
     }
 }
