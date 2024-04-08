@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::mem::swap;
+use crate::utils::collect_ordered_vec;
 
 #[derive(Eq, PartialEq, Clone, Hash, Debug, Default)]
 pub struct TransFunc {
@@ -130,7 +131,7 @@ impl DeterministicFiniteAutomaton {
             }
             swap(&mut next_divided_set, &mut divided_set);
         };
-        let new_divided_map = divided_set.into_iter().fold(HashMap::new(), |mut new_map, group_list| {
+        let new_divided_map = divided_set.into_iter().map(|x| collect_ordered_vec(x)).fold(HashMap::new(), |mut new_map, group_list| {
             let mut group_iter = group_list.into_iter();
             let symbol = group_iter.next().unwrap();
             while let Some(other) = group_iter.next() {
