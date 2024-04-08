@@ -105,33 +105,39 @@ impl DeterministicFiniteAutomaton {
             let mut divided_set = Vec::new();
             divided_set.push(automaton.end_state_set.clone());
             divided_set.push(automaton.state.difference(&automaton.end_state_set).map(|x| x.clone()).collect::<HashSet<_>>());
+            //将初始集合分割成含Ac集和不含Ac集
             loop {
-                let mut next_divided_set = Vec::new();
-                let state_group_map = divided_set.iter().enumerate().flat_map(|(index, set)| set.clone().into_iter().map(move |x| (x, index.clone()))).collect::<HashMap<_, _>>();
+                let mut next_divided_set = Vec::new();//尝试分割后的集合
+                let state_group_map = divided_set.iter()
+                    .enumerate()
+                    .flat_map(|(index, set)| set.clone().into_iter().map(move |x| (x, index.clone())))
+                    .collect::<HashMap<_, _>>();//每个状态所属的集合的映射
                 for group in divided_set.clone() {
-                    let this_group_size = group.len();
-                    let mut grouped_set_map = HashMap::new();
-                    for alpha in &automaton.alpha {
-                        grouped_set_map.clear();
-                        for start_state in &group {
-                            let this_trans = TransFunc::new(start_state.clone(), alpha.clone());
-                            if let Some(target_state) = automaton.trans.get(&this_trans) {
+                    //对每个分组
+                    let mut grouped_set_map = HashMap::new();//将这个分组根据转移后的目标状态尝试分组
+                    for alpha in &automaton.alpha {//对于每个字母
+                        grouped_set_map.clear();//清空之前分组的结果
+                        for start_state in &group {//对于这个分组内的每一个状态
+                            let this_trans = TransFunc::new(start_state.clone(), alpha.clone());//找到对应的转换函数
+                            if let Some(target_state) = automaton.trans.get(&this_trans) {//获取转移后的状态
+                                //如果找到了，根据转换后的分组将这个状态组分组
                                 grouped_set_map.entry(state_group_map[target_state]).or_insert(HashSet::new()).insert(this_trans.now_state);
-                            } else {
+                            } else {//如果找不到，说明是未完全定义的自动机
                                 panic!("找不到对应的转换函数，该自动机可能是未完全定义的有限自动机");
                             }
                         }
-                        if grouped_set_map.len() != this_group_size {
+                        if grouped_set_map.len() != 1 {//如果不在同一组，则进行划分
                             break;
                         }
+                        //否则尝试下一个组
                     }
-                    grouped_set_map.into_values().for_each(|v| next_divided_set.push(v));
+                    grouped_set_map.into_values().for_each(|v| next_divided_set.push(v));//将划分的结果（一个或多个分组放入新集合
                 }
-                if next_divided_set.len() == divided_set.len() {
+                if next_divided_set.len() == divided_set.len() {//如果这次迭代后没有变化则说明趋于稳定，解锁
                     break;
                 }
-                swap(&mut next_divided_set, &mut divided_set);
-            };
+                swap(&mut next_divided_set, &mut divided_set);//否则将新前组置为当前组
+            };//销毁旧分组
             divided_set
         }
 
