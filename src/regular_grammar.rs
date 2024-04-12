@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::f32::consts::E;
 use crate::deterministic_finite_automaton::{DeterministicFiniteAutomaton, TransFunc};
+use crate::r#type::StringArgs;
 
 #[derive(Debug, Clone)]
 pub struct RegularGrammar {
@@ -70,4 +71,8 @@ impl RegularGrammar {
         }).collect::<HashMap<_, _>>();
         DeterministicFiniteAutomaton::build(alpha, states, start_state, end_state, trans)
     }
+}
+
+pub fn build_rg_with_args(mut args:StringArgs)->RegularGrammar{
+
 }
