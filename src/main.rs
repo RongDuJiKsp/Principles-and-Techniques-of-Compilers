@@ -6,6 +6,7 @@ mod test;
 mod utils;
 mod living_dfa;
 mod r#type;
+mod regular_grammar;
 
 fn main() {
     let args = std::env::args().collect::<Vec<_>>();
