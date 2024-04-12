@@ -30,7 +30,6 @@ pub fn main_application(mut args: StringArgs) {
 
 fn sp_dfa(args: StringArgs) {
     let dfa = build_dfa_with_command_args(args);
-    dbg!(dfa.simplify());
 }
 
 fn trans_dfa(args: StringArgs) {

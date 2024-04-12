@@ -7,7 +7,7 @@ use crate::r#type::StringArgs;
 pub struct RegularGrammar {
     terminal: HashSet<char>,
     non_terminal: HashSet<char>,
-    production_set: HashMap<char, String>,
+    production_set: HashMap<char, HashSet<String>>,
     start: char,
 }
 
@@ -20,7 +20,6 @@ impl RegularGrammar {
             start,
         };
         //example: S->aA|bB,A->b|d|e,B->m
-        dbg!(grammars.clone(),start.clone());
         for production_token in grammars.split(",") {
             let mut spliter = production_token.split("->");
             let (left_vn, right_s) = (spliter.next(), spliter.next());
@@ -33,8 +32,7 @@ impl RegularGrammar {
                     if right_production.len() == 0 || right_production.len() > 2 {
                         return Err("该文法不是正规文法".to_string());
                     }
-                    builder.production_set.insert(left_vn.clone(), right_production.to_string());
-                    dbg!(builder.production_set.clone());
+                    builder.production_set.entry(left_vn.clone()).or_default().insert(right_production.to_string());
                     let mut char_iter = right_production.chars();
                     if let Some(v_t) = char_iter.next() {
                         if builder.non_terminal.contains(&v_t) {
@@ -62,16 +60,19 @@ impl RegularGrammar {
         let mut end_state = HashSet::new();
         end_state.insert('+');
         let start_state = self.start;
-        let trans = self.production_set.into_iter().map(|(v_n, sen)| {
-            let mut char_iter = sen.chars();
-            let left_vt = char_iter.next().unwrap();
-            if let Some(right_v_n) = char_iter.next() {
-                (TransFunc::new(v_n, left_vt), right_v_n)
-            } else {
-                (TransFunc::new(v_n, left_vt), '+')//转移到接受状态
+        let mut trans = HashMap::new();
+        for (v_n, sen_set) in self.production_set {
+            for sen in sen_set {
+                let mut char_iter = sen.chars();
+                let left_vt = char_iter.next().unwrap();
+                if let Some(right_v_n) = char_iter.next() {
+                    trans.insert(TransFunc::new(v_n, left_vt), right_v_n);
+                } else {
+                    trans.insert(TransFunc::new(v_n, left_vt), '+');//转移到接受状态
+                }
             }
-        }).collect::<HashMap<_, _>>();
-        dbg!(DeterministicFiniteAutomaton::build(alpha, states, start_state, end_state, trans))
+        }
+        DeterministicFiniteAutomaton::build(alpha, states, start_state, end_state, trans)
     }
 }
 
@@ -79,13 +80,12 @@ pub fn build_rg_with_args(mut args: StringArgs) -> RegularGrammar {
     let (mut grammar_str, mut start_char) = (Default::default(), Default::default());
     while let Some(mode) = args.next() {
         if let Some(val) = args.next() {
-            dbg!(mode.clone(),val.clone());
             match mode.as_str() {
                 "--grammar" => {
-                    grammar_str=val;
+                    grammar_str = val;
                 }
                 "--start" => {
-                    start_char=val.chars().next().unwrap();
+                    start_char = val.chars().next().unwrap();
                 }
                 _ => {}
             }
