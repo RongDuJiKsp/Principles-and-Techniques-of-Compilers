@@ -20,35 +20,37 @@ impl RegularGrammar {
             start,
         };
         //example: S->aA|bB,A->b|d|e,B->m
+        dbg!(grammars.clone(),start.clone());
         for production_token in grammars.split(",") {
             let mut spliter = production_token.split("->");
             let (left_vn, right_s) = (spliter.next(), spliter.next());
             if left_vn == None || right_s == None {
-                return Err("产生式不合法！".into_string());
+                return Err("产生式不合法！".to_string());
             };
             if let (Ok(left_vn), right_s) = (left_vn.unwrap().parse::<char>(), right_s.unwrap()) {
                 builder.non_terminal.insert(left_vn.clone());
                 for right_production in right_s.split("|") {
                     if right_production.len() == 0 || right_production.len() > 2 {
-                        return Err("该文法不是正规文法".into_string());
+                        return Err("该文法不是正规文法".to_string());
                     }
-                    builder.production_set.insert(left_vn.clone(), right_production.into_string());
+                    builder.production_set.insert(left_vn.clone(), right_production.to_string());
+                    dbg!(builder.production_set.clone());
                     let mut char_iter = right_production.chars();
                     if let Some(v_t) = char_iter.next() {
                         if builder.non_terminal.contains(&v_t) {
-                            return Err("重复的终结符和非终结符".into_string());
+                            return Err("重复的终结符和非终结符".to_string());
                         }
                         builder.terminal.insert(v_t);
                     }
                     if let Some(v_n) = char_iter.next() {
                         if builder.terminal.contains(&v_n) {
-                            return Err("重复的终结符和非终结符".into_string());
+                            return Err("重复的终结符和非终结符".to_string());
                         }
-                        builder.non_terminal.insert(v_n)
+                        builder.non_terminal.insert(v_n);
                     }
                 }
             } else {
-                return Err("在解析左串时发生问题".into_string());
+                return Err("在解析左串时发生问题".to_string());
             }
         }
         Ok(builder)
@@ -69,10 +71,27 @@ impl RegularGrammar {
                 (TransFunc::new(v_n, left_vt), '+')//转移到接受状态
             }
         }).collect::<HashMap<_, _>>();
-        DeterministicFiniteAutomaton::build(alpha, states, start_state, end_state, trans)
+        dbg!(DeterministicFiniteAutomaton::build(alpha, states, start_state, end_state, trans))
     }
 }
 
-pub fn build_rg_with_args(mut args:StringArgs)->RegularGrammar{
-
+pub fn build_rg_with_args(mut args: StringArgs) -> RegularGrammar {
+    let (mut grammar_str, mut start_char) = (Default::default(), Default::default());
+    while let Some(mode) = args.next() {
+        if let Some(val) = args.next() {
+            dbg!(mode.clone(),val.clone());
+            match mode.as_str() {
+                "--grammar" => {
+                    grammar_str=val;
+                }
+                "--start" => {
+                    start_char=val.chars().next().unwrap();
+                }
+                _ => {}
+            }
+        } else {
+            panic!("excepted value of param {mode}");
+        }
+    }
+    RegularGrammar::parse_grammar_token_and_build(grammar_str, start_char).expect("在构建正规文法时解析失败")
 }

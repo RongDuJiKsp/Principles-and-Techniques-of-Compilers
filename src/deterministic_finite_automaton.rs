@@ -186,9 +186,9 @@ impl DeterministicFiniteAutomaton {
 
 pub fn build_dfa_with_command_args(mut args: StringArgs) -> DeterministicFiniteAutomaton {
     let (mut alpha, mut state_set, mut start_state, mut end_state_set, mut trans) = (Default::default(), Default::default(), Default::default(), Default::default(), Default::default());
-    while let Some(command) = args.next() {
+    while let Some(mode) = args.next() {
         if let Some(value) = args.next() {
-            match command.as_str() {
+            match mode.as_str() {
                 "--alpha" => {
                     alpha = DeterministicFiniteAutomaton::parse_alpha_table(value).expect("字母表解析失败，请检查参数");
                 }
@@ -208,7 +208,7 @@ pub fn build_dfa_with_command_args(mut args: StringArgs) -> DeterministicFiniteA
                 }
             }
         } else {
-            panic!("excepted value of param {command}");
+            panic!("excepted value of param {mode}");
         }
     };
     return DeterministicFiniteAutomaton::build(alpha, state_set, start_state, end_state_set, trans).expect("创建DFA失败，请检查参数是否合法！");
