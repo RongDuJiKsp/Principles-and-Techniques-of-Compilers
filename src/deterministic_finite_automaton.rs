@@ -138,7 +138,7 @@ impl DeterministicFiniteAutomaton {
                     }
                     grouped_set_map.into_values().for_each(|v| next_divided_set.push(v));//将划分的结果（一个或多个分组放入新集合
                 }
-                if next_divided_set.len() == divided_set.len() {//如果这次迭代后没有变化则说明趋于稳定，解锁
+                if next_divided_set.len() == divided_set.len() {//如果这次迭代后没有变化则说明趋于稳定，结束
                     break;
                 }
                 swap(&mut next_divided_set, &mut divided_set);//否则将新前组置为当前组
