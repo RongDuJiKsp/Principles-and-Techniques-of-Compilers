@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::fmt::{Display, Formatter, write};
 use std::io::stdin;
 use std::mem::swap;
 use crate::living_dfa::LivingDFA;
@@ -251,5 +252,22 @@ pub fn simulate_dfa_in_the_terminal(dfa: DeterministicFiniteAutomaton) {
                 living_dfa.reset();
             }
         }
+    }
+}
+
+impl Display for DeterministicFiniteAutomaton {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut trans_fmt = String::new();
+        for (TransFunc { now_state, input_alpha }, target) in self.trans.clone() {
+            trans_fmt += &format!("    {now_state}+{input_alpha}->{target}\n");
+        }
+        return write!(f, "
+    This is a DFA
+    alphas is {:?}
+    start state is {:?}
+    end_state_set is {:?}
+    trans :
+{}
+      ", self.alpha.clone(), self.start_state.clone(), self.end_state_set, trans_fmt);
     }
 }
