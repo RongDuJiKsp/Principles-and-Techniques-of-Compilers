@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::f32::consts::E;
 use crate::deterministic_finite_automaton::{DeterministicFiniteAutomaton, TransFunc};
 use crate::r#type::StringArgs;
+use crate::utils::split_type_two_grammar;
 
 #[derive(Debug, Clone)]
 pub struct RegularGrammar {
@@ -21,18 +22,16 @@ impl RegularGrammar {
         };
         //example: S->aA|bB,A->b|d|e,B->m
         for production_token in grammars.split(",") {
-            let mut spliter = production_token.split("->");
-            let (left_vn, right_s) = (spliter.next(), spliter.next());
-            if left_vn == None || right_s == None {
-                return Err("产生式不合法！".to_string());
-            };
-            if let (Ok(left_vn), right_s) = (left_vn.unwrap().parse::<char>(), right_s.unwrap()) {
+            if let Ok((left_vn, right_s)) = split_type_two_grammar(production_token.to_string()) {
                 builder.non_terminal.insert(left_vn.clone());
                 for right_production in right_s.split("|") {
                     if right_production.len() == 0 || right_production.len() > 2 {
                         return Err("该文法不是正规文法".to_string());
                     }
                     builder.production_set.entry(left_vn.clone()).or_default().insert(right_production.to_string());
+                    if right_production=="*"{
+                        continue;
+                    }
                     let mut char_iter = right_production.chars();
                     if let Some(v_t) = char_iter.next() {
                         if builder.non_terminal.contains(&v_t) {
@@ -63,6 +62,10 @@ impl RegularGrammar {
         let mut trans = HashMap::new();
         for (v_n, sen_set) in self.production_set {
             for sen in sen_set {
+                if sen=="*"{
+                    end_state.insert(v_n);
+                    continue;
+                }
                 let mut char_iter = sen.chars();
                 let left_vt = char_iter.next().unwrap();
                 if let Some(right_v_n) = char_iter.next() {
