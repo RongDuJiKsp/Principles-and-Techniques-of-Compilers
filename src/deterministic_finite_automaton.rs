@@ -4,6 +4,7 @@ use std::io::stdin;
 use std::mem::swap;
 use crate::living_dfa::LivingDFA;
 use crate::r#type::StringArgs;
+use crate::statics::SPLIT_UNITS;
 use crate::utils::collect_ordered_vec;
 
 #[derive(Eq, PartialEq, Clone, Hash, Debug, Default)]
@@ -56,7 +57,7 @@ impl DeterministicFiniteAutomaton {
     }
     pub fn parse_alpha_table(string: String) -> Result<AlphaTable, ()> {
         let mut alpha_tab: AlphaTable = HashSet::new();
-        for alpha in string.split(",") {
+        for alpha in string.split(SPLIT_UNITS) {
             if alpha.len() != 1 {
                 return Err(());
             }
@@ -67,7 +68,7 @@ impl DeterministicFiniteAutomaton {
     pub fn parse_state_set(states: String) -> Result<(StateSet, StateSet), ()> {
         let mut state_set: StateSet = HashSet::new();
         let mut end_states: StateSet = HashSet::new();
-        for state in states.split(",") {
+        for state in states.split(SPLIT_UNITS) {
             if state.len() == 2 {
                 let this_state = state.chars().nth(1).unwrap().to_ascii_uppercase();
                 state_set.insert(this_state.clone());
@@ -83,9 +84,9 @@ impl DeterministicFiniteAutomaton {
     }
     pub fn parse_trans(trans: String) -> Result<GrammarFunction, ()> {
         let mut grammar: GrammarFunction = HashMap::new();
-        for (left, trans, right) in trans.split(",").map(|s| {
-            let mut whole_pat = s.split("=");
-            let mut left_pat = whole_pat.next().unwrap().split("+");
+        for (left, trans, right) in trans.split(SPLIT_UNITS).map(|s| {
+            let mut whole_pat = s.split(TransFunc::RESULT_CHAT);
+            let mut left_pat = whole_pat.next().unwrap().split(TransFunc::UNIT_CHAR);
             (left_pat.next().unwrap().chars().nth(0).unwrap().to_ascii_uppercase(),
              left_pat.next().unwrap().chars().nth(0).unwrap().to_ascii_lowercase(),
              whole_pat.next().unwrap().chars().nth(0).unwrap().to_ascii_uppercase())

@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use crate::deterministic_finite_automaton::State;
+use crate::statics::{EMPTY_SENTENCE, SPLIT_UNITS};
 use crate::utils::split_type_two_grammar;
 
 #[derive(Debug, Clone)]
@@ -22,10 +23,10 @@ impl PushDownAutomatonGrammar {
             start: start_state,
         };
         builder.non_terminal.insert(start_state.clone());
-        for grammar_sen in grammar_tokens.split(",") {
+        for grammar_sen in grammar_tokens.split(SPLIT_UNITS) {
             if let Ok((left_vn, right_sense)) = split_type_two_grammar(grammar_sen.to_string()) {
-                if right_sense == "*" {
-                    builder.production_set.entry(left_vn).or_default().insert("*".to_string());
+                if right_sense == EMPTY_SENTENCE {
+                    builder.production_set.entry(left_vn).or_default().insert(EMPTY_SENTENCE.to_string());
                     continue;
                 }
                 for right_char in right_sense.chars() {
@@ -43,10 +44,7 @@ impl PushDownAutomatonGrammar {
         Ok(builder)
     }
     pub fn eliminate_left_recursion_and_backtracking(&self) -> Option<Self> {
-      Some(self.clone())
+        Some(self.clone())
     }
-    pub fn judgment_ll1_grammar(&self){
-
-    }
-
+    pub fn judgment_ll1_grammar(&self) {}
 }

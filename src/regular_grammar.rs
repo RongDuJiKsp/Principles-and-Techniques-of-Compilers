@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::f32::consts::E;
 use crate::deterministic_finite_automaton::{DeterministicFiniteAutomaton, TransFunc};
 use crate::r#type::StringArgs;
+use crate::statics::{EMPTY_SENTENCE, GRAMMAR_SPLIT_TARGET_UNIT, SPLIT_UNITS};
 use crate::utils::split_type_two_grammar;
 
 #[derive(Debug, Clone)]
@@ -21,15 +22,15 @@ impl RegularGrammar {
             start,
         };
         //example: S->aA|bB,A->b|d|e,B->m
-        for production_token in grammars.split(",") {
+        for production_token in grammars.split(SPLIT_UNITS) {
             if let Ok((left_vn, right_s)) = split_type_two_grammar(production_token.to_string()) {
                 builder.non_terminal.insert(left_vn.clone());
-                for right_production in right_s.split("|") {
+                for right_production in right_s.split(GRAMMAR_SPLIT_TARGET_UNIT) {
                     if right_production.len() == 0 || right_production.len() > 2 {
                         return Err("该文法不是正规文法".to_string());
                     }
                     builder.production_set.entry(left_vn.clone()).or_default().insert(right_production.to_string());
-                    if right_production=="*"{
+                    if right_production == "*" {
                         continue;
                     }
                     let mut char_iter = right_production.chars();
@@ -55,14 +56,14 @@ impl RegularGrammar {
     pub fn into_dfa(self) -> Result<DeterministicFiniteAutomaton, ()> {
         let alpha = self.terminal;
         let mut states = self.non_terminal;
-        states.insert('+');// '+'即结束状态
+        states.insert(RegularGrammar::END_STATE);// '+'即结束状态
         let mut end_state = HashSet::new();
-        end_state.insert('+');
+        end_state.insert(RegularGrammar::END_STATE);
         let start_state = self.start;
         let mut trans = HashMap::new();
         for (v_n, sen_set) in self.production_set {
             for sen in sen_set {
-                if sen=="*"{
+                if sen == EMPTY_SENTENCE {
                     end_state.insert(v_n);
                     continue;
                 }
@@ -71,7 +72,7 @@ impl RegularGrammar {
                 if let Some(right_v_n) = char_iter.next() {
                     trans.insert(TransFunc::new(v_n, left_vt), right_v_n);
                 } else {
-                    trans.insert(TransFunc::new(v_n, left_vt), '+');//转移到接受状态
+                    trans.insert(TransFunc::new(v_n, left_vt), RegularGrammar::END_STATE);//转移到接受状态
                 }
             }
         }
