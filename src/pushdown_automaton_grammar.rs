@@ -24,6 +24,10 @@ impl PushDownAutomatonGrammar {
         builder.non_terminal.insert(start_state.clone());
         for grammar_sen in grammar_tokens.split(",") {
             if let Ok((left_vn, right_sense)) = split_type_two_grammar(grammar_sen.to_string()) {
+                if right_sense == "*" {
+                    builder.production_set.entry(left_vn).or_default().insert("*".to_string());
+                    continue;
+                }
                 for right_char in right_sense.chars() {
                     if right_char.is_ascii_uppercase() {
                         builder.non_terminal.insert(right_char);
@@ -38,5 +42,11 @@ impl PushDownAutomatonGrammar {
         }
         Ok(builder)
     }
-    pub fn build_with_hand() {}
+    pub fn eliminate_left_recursion_and_backtracking(&self) -> Option<Self> {
+      Some(self.clone())
+    }
+    pub fn judgment_ll1_grammar(&self){
+
+    }
+
 }

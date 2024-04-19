@@ -8,6 +8,8 @@ mod living_dfa;
 mod r#type;
 mod regular_grammar;
 mod pushdown_automaton_grammar;
+mod prediction_analyzer;
+mod statics;
 
 fn main() {
     let args = std::env::args().collect::<Vec<_>>();
