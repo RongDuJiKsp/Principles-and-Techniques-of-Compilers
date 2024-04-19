@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+
 use crate::deterministic_finite_automaton::State;
 use crate::statics::{EMPTY_SENTENCE, SPLIT_UNITS};
 use crate::utils::split_type_two_grammar;

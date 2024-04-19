@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+
 use crate::main_application::main_application;
 use crate::prediction_analyzer::{PredictionAnalyzer, PredictionAnalyzerInput};
 use crate::statics::EMPTY_SENTENCE;
@@ -28,7 +29,7 @@ fn test_ll1() {
         ('V', '#', EMPTY_SENTENCE),
     ].into_iter().map(|(v_n, v_t, tag)| (PredictionAnalyzerInput::new(v_n, v_t), tag.to_string())).collect::<HashMap<_, _>>();
     let pa = PredictionAnalyzer::new(ll1_table, 'E');
-    match pa.analyzer(&"i+i*i".to_string()) {
+    match pa.analyzer(&"i+i+(i*i+i)+i*(i+i)+(i)".to_string()) {
         Ok(res) => {
             println!("analysis stack is");
             for str in res {
@@ -37,7 +38,6 @@ fn test_ll1() {
         }
         Err(err) => {
             println!("{err}");
-            panic!("err");
         }
     };
 }

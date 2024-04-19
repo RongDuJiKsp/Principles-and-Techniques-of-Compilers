@@ -1,7 +1,8 @@
 use std::collections::{HashMap, HashSet};
-use std::fmt::{Display, Formatter, write};
+use std::fmt::{Display, Formatter};
 use std::io::stdin;
 use std::mem::swap;
+
 use crate::living_dfa::LivingDFA;
 use crate::r#type::StringArgs;
 use crate::statics::SPLIT_UNITS;

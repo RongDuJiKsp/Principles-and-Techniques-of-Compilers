@@ -1,5 +1,5 @@
 use std::collections::{HashMap, HashSet};
-use std::f32::consts::E;
+
 use crate::deterministic_finite_automaton::{DeterministicFiniteAutomaton, TransFunc};
 use crate::r#type::StringArgs;
 use crate::statics::{EMPTY_SENTENCE, GRAMMAR_SPLIT_TARGET_UNIT, SPLIT_UNITS};

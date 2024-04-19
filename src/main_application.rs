@@ -1,7 +1,4 @@
-use std::io::stdin;
 use crate::deterministic_finite_automaton::{build_dfa_with_command_args, simulate_dfa_in_the_terminal};
-
-use crate::living_dfa::LivingDFA;
 use crate::r#type::StringArgs;
 use crate::regular_grammar::build_rg_with_args;
 
@@ -30,7 +27,7 @@ pub fn main_application(mut args: StringArgs) {
 
 fn sp_dfa(args: StringArgs) {
     let dfa = build_dfa_with_command_args(args);
-    let simplify_dfa =dfa.simplify();
+    let simplify_dfa = dfa.simplify();
     println!("{simplify_dfa}");
 }
 

@@ -1,5 +1,4 @@
-use crate::deterministic_finite_automaton::{DeterministicFiniteAutomaton, State};
-use crate::r#type::StringArgs;
+use crate::deterministic_finite_automaton::State;
 use crate::statics::GRAMMAR_SPLIT_IO_UNIT;
 
 pub fn collect_ordered_vec<Item: Ord, T: IntoIterator<Item=Item>>(iter: T) -> Vec<Item> {
