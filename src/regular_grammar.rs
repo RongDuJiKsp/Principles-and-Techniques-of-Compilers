@@ -30,7 +30,7 @@ impl RegularGrammar {
                         return Err("该文法不是正规文法".to_string());
                     }
                     builder.production_set.entry(left_vn.clone()).or_default().insert(right_production.to_string());
-                    if right_production == "*" {
+                    if right_production == EMPTY_SENTENCE {
                         continue;
                     }
                     let mut char_iter = right_production.chars();
@@ -56,7 +56,7 @@ impl RegularGrammar {
     pub fn into_dfa(self) -> Result<DeterministicFiniteAutomaton, ()> {
         let alpha = self.terminal;
         let mut states = self.non_terminal;
-        states.insert(RegularGrammar::END_STATE);// '+'即结束状态
+        states.insert(RegularGrammar::END_STATE);
         let mut end_state = HashSet::new();
         end_state.insert(RegularGrammar::END_STATE);
         let start_state = self.start;

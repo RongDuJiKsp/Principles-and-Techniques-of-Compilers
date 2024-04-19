@@ -41,28 +41,28 @@ impl PredictionAnalyzer {
         analyzer_stack.push(self.start_char.clone());
         let mut now_char = to_parse_iter.next().unwrap();//把第一个输入符号读入now_char
         loop {
+            dbg!(pull_down_queue.clone());
             let top_char = analyzer_stack.pop().unwrap();//把栈顶符号弹出，放入x
             if now_char == top_char && top_char == PredictionAnalyzer::BEGIN_END_CHAR {//分析成功
+                pull_down_queue.push("匹配，分析成功".to_string());
                 return Ok(pull_down_queue);
             } else if now_char == top_char {//符号匹配，扫描下一个字符
-                analyzer_stack.pop();
                 now_char = to_parse_iter.next().unwrap();
+                pull_down_queue.push(format!("匹配，弹出栈顶符号{top_char}并且读入下一个输入符号{now_char}"));
             } else if top_char.is_ascii_uppercase() {//若栈顶为非终结符
                 if let Some(target_str) = self.analyzer_table.get(&PredictionAnalyzerInput::new(top_char, now_char)) {//查表，获取转换的目标串
                     if target_str == EMPTY_SENTENCE {//若为推出空串，则只弹出非终结符
+                        pull_down_queue.push(format!("弹出栈顶符号{top_char},由于推出空串，故不压栈"));
                         continue;
                     } else if target_str == "" {//若在表中不存在，则报错
                         return err;
                     }
                     target_str.chars().rev().for_each(|x| analyzer_stack.push(x));//逆序压栈
-                    pull_down_queue.push(format!("{}->{}", top_char, target_str.clone()));//进行推导记录
+                    pull_down_queue.push(format!("弹出栈顶符号{top_char},将M[{top_char},{now_char}]中{top_char}->{target_str}中的{target_str}逆序压栈"));//进行推导记录
                 } else {
                     return err;//若在表中不存在，则报错
                 }
             } else {
-                return err;
-            }
-            if now_char == Self::BEGIN_END_CHAR {
                 return err;
             }
         }
