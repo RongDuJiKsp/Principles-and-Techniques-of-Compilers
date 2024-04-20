@@ -19,6 +19,7 @@ impl TransFunc {
 }
 
 pub const EMPTY_SENTENCE: &'static str = "$";
+pub const EMPTY_SENTENCE_CHAR: char = '$';
 pub const SPLIT_UNITS: &'static str = ",";
 pub const GRAMMAR_SPLIT_IO_UNIT: &'static str = "->";
 pub const GRAMMAR_SPLIT_TARGET_UNIT: &'static str = "|";
