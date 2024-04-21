@@ -45,6 +45,22 @@ fn test_ll1() {
 
 #[test]
 fn test_first() {
-    let pd = PushDownAutomatonGrammar::build_with_case("A->Ba,B->Cb,C->c".to_string(), 'A');
-    dbg!(pd.unwrap().build_ll1_analyzer());
+    let ll1_table = [
+        ('E', 'i', "TU"),
+        ('T', 'i', "FV"),
+        ('F', 'i', "i"),
+        ('U', '+', "+TU"),
+        ('V', '+', EMPTY_SENTENCE),
+        ('V', '*', "*FV"),
+        ('E', '(', "TU"),
+        ('T', '(', "FV"),
+        ('F', '(', "(E)"),
+        ('U', ')', EMPTY_SENTENCE),
+        ('V', ')', EMPTY_SENTENCE),
+        ('U', '#', EMPTY_SENTENCE),
+        ('V', '#', EMPTY_SENTENCE),
+    ].into_iter().map(|(v_n, v_t, tag)| (PredictionAnalyzerInput::new(v_n, v_t), tag.to_string())).collect::<HashMap<_, _>>();
+    let pa = PredictionAnalyzer::new(ll1_table, 'E');
+    let pd = PushDownAutomatonGrammar::build_with_case("E->TU,U->+TU|$,T->FV,V->*FV|$,F->(E)|i".to_string(), 'E').expect("err");
+    assert_eq!(pa, pd.build_ll1_analyzer().expect("SS"));
 }
