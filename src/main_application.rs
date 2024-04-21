@@ -46,10 +46,13 @@ fn trans_grammar(args: StringArgs) {
 
 fn test_ll1(args: StringArgs) {
     let push_down_gmr = build_push_down_automaton_grammar_with_args(args);
-    if let Some(ll1_grammar) = push_down_gmr.build_ll1_analyzer() {
-        println!("该文法是LL(1)文法，正在进入shell模式");
-        test_sentence_using_prediction_analyzer_cli(&ll1_grammar);
-    } else {
-        println!("该文法不是LL(1)文法！");
+    match push_down_gmr.build_ll1_analyzer() {
+        Ok((ll1_grammar, first, follow, select)) => {
+            println!("该文法是LL(1)文法，正在进入shell模式");
+            test_sentence_using_prediction_analyzer_cli(&ll1_grammar);
+        }
+        Err(e) => {
+            println!("该文法不是LL(1)文法！ 原因:{e}");
+        }
     }
 }

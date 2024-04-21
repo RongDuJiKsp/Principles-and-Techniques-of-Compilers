@@ -62,5 +62,5 @@ fn test_first() {
     ].into_iter().map(|(v_n, v_t, tag)| (PredictionAnalyzerInput::new(v_n, v_t), tag.to_string())).collect::<HashMap<_, _>>();
     let pa = PredictionAnalyzer::new(ll1_table, 'E');
     let pd = PushDownAutomatonGrammar::build_with_case("E->TU,U->+TU|$,T->FV,V->*FV|$,F->(E)|i".to_string(), 'E').expect("err");
-    assert_eq!(pa, pd.build_ll1_analyzer().expect("SS"));
+    assert_eq!(pa, pd.build_ll1_analyzer().expect("SS").0);
 }
