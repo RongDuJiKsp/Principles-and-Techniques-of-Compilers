@@ -52,24 +52,13 @@ impl PushDownAutomatonGrammar {
                 return None;
             }
         }
-        dbg!(first_set.clone());
         //迭代计算每个非终结符的follow_set
         if let Err(_) = self.get_follow_set(&mut follow_set, &first_set) {
             return None;
         }
         //计算select集合
-        let mut select_set: HashMap<(char, String), HashSet<char>> = HashMap::new();
-        for (left_v_n, production_set) in &self.production_set {
-            for production in production_set {
-                let this_select_set = select_set.entry((left_v_n.clone(), production.clone())).or_default();
-                if production == EMPTY_SENTENCE || production.chars().into_iter().position(|x| self.terminal.contains(&x) || !first_set[&x].contains(&EMPTY_SENTENCE_CHAR)) == None {
-                    //如果A可以推出空串
-                    first_set[left_v_n].union(&follow_set[left_v_n]).filter(|x| **x != EMPTY_SENTENCE_CHAR).for_each(|x| { this_select_set.insert(*x); })
-                } else {
-                    first_set[left_v_n].iter().for_each(|x| { this_select_set.insert(*x); })
-                }
-            }
-        }
+        let select_set: HashMap<(char, String), HashSet<char>> = self.get_select_set(&first_set, &follow_set);
+        dbg!(first_set.clone(),follow_set.clone(),select_set.clone());
         //判断select集合有无交集
         for left_v_n in &self.non_terminal {
             for (index, i_production) in self.production_set[left_v_n].iter().enumerate() {
@@ -80,6 +69,7 @@ impl PushDownAutomatonGrammar {
                 }
             }
         }
+
         //计算分析表
         let mut analyzer_table: HashMap<PredictionAnalyzerInput, String> = HashMap::new();
         for ((left_v_n, produce), v_t_set) in select_set {
@@ -189,5 +179,37 @@ impl PushDownAutomatonGrammar {
         }
 
         Ok(())
+    }
+    fn get_select_set(&self, first_set: &HashMap<char, HashSet<char>>, follow_set: &HashMap<char, HashSet<char>>) -> HashMap<(char, String), HashSet<char>> {
+        let mut select_set = HashMap::new();
+        for (left_v_n, production_set) in &self.production_set {
+            for production in production_set {
+                if production == EMPTY_SENTENCE {//如果可以直接产生空串
+                    select_set.insert((*left_v_n, EMPTY_SENTENCE.to_string()), follow_set[left_v_n].clone());//则select为follow
+                } else {
+                    //计算这个产生式的select集合
+                    let (this_production_first_set, cant_empty) = production.chars().into_iter().fold((HashSet::new(), false), |(mut set, mut okd), ch| {
+                        if !okd {
+                            if self.terminal.contains(&ch) {//若直接产生终结符
+                                set.insert(ch);
+                                okd = true;//不能产生空串
+                            } else {
+                                first_set[&ch].clone().into_iter().filter(|x| *x != EMPTY_SENTENCE_CHAR).for_each(|x| { set.insert(x); });//将first集合直接加入
+                                if !first_set.contains_key(&EMPTY_SENTENCE_CHAR) {//如果不能产生空串
+                                    okd = true;
+                                }
+                            }
+                        }
+                        (set, okd)
+                    });
+                    if !cant_empty {
+                        select_set.insert((*left_v_n, production.to_string()), this_production_first_set.union(&follow_set[left_v_n]).map(|x| *x).collect());
+                    } else {
+                        select_set.insert((*left_v_n, production.to_string()), this_production_first_set);
+                    }
+                }
+            }
+        }
+        select_set
     }
 }
