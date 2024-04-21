@@ -8,7 +8,6 @@ pub fn main_application(mut args: StringArgs) {
     args.next();
     match args.next() {
         Some(arg) => {
-            dbg!(arg.clone());
             match arg.as_str() {
                 "--sp_dfa" => { sp_dfa(args) }
                 "--trans_dfa" => { trans_dfa(args) }
@@ -48,6 +47,12 @@ fn test_ll1(args: StringArgs) {
     let push_down_gmr = build_push_down_automaton_grammar_with_args(args);
     match push_down_gmr.build_ll1_analyzer() {
         Ok((ll1_grammar, first, follow, select)) => {
+            println!("first set 如下");
+            first.into_iter().map(|(ch, set)| format!("FIRST({ch})={:?}", set)).for_each(|x| println!("{x}"));
+            println!("follow set 如下");
+            follow.into_iter().map(|(ch, set)| format!("FOLLOW({ch})={:?}", set)).for_each(|x| println!("{x}"));
+            println!("select set 如下");
+            select.into_iter().map(|((from, to), set)| format!("SELECT({from}->{to})={:?}", set)).for_each(|x| println!("{x}"));
             println!("该文法是LL(1)文法，正在进入shell模式");
             test_sentence_using_prediction_analyzer_cli(&ll1_grammar);
         }
