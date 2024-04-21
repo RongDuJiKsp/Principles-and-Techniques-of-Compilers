@@ -70,9 +70,9 @@ impl PredictionAnalyzer {
 }
 
 pub fn test_sentence_using_prediction_analyzer_cli(pa: &PredictionAnalyzer) {
-    let mut buffer = String::new();
-    let mut is_dbg = true;
     loop {
+        let mut buffer = String::new();
+        let mut is_dbg = true;
         stdin().read_line(&mut buffer).expect("读取时发生错误！");
         let mut iter = buffer.trim().chars().peekable();
         if let Some(front_char) = iter.peek() {
