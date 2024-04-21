@@ -18,6 +18,7 @@ impl PredictionAnalyzerInput {
     }
 }
 
+#[derive(Debug)]
 pub struct PredictionAnalyzer {
     analyzer_table: HashMap<PredictionAnalyzerInput, String>,
     start_char: char,

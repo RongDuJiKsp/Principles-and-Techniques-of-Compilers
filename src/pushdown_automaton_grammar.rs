@@ -52,10 +52,11 @@ impl PushDownAutomatonGrammar {
                 return None;
             }
         }
+        dbg!(first_set);
         //计算每个非终结符的follow_set
         follow_set.insert(self.start.clone(), HashSet::from([PredictionAnalyzer::BEGIN_END_CHAR]));//对文法开始符号，丢入#
         for &v_n in &self.non_terminal {
-            if let Err(_) = self.get_follow_set(v_n, &mut follow_set) {
+            if let Err(_) = self.get_follow_set(v_n, &mut follow_set, &first_set, &mut HashSet::new()) {
                 return None;
             }
         }
@@ -69,19 +70,18 @@ impl PushDownAutomatonGrammar {
             return Err(());//含左递归
         }
         search_stack.insert(v_n.clone());
-        let this_char_set = mem.entry(v_n.clone()).or_default();
         for production in &self.production_set[&v_n] {
             if production == EMPTY_SENTENCE {//如果直接推出空串
-                this_char_set.insert(EMPTY_SENTENCE_CHAR);
+                mem.entry(v_n.clone()).or_default().insert(EMPTY_SENTENCE_CHAR);
                 continue;
             }
             let mut ended = false;//标记是否可以推出空串
             for now_char in production.chars() {
-                if now_char.is_ascii_lowercase() {//当前字符为终结符
-                    if this_char_set.contains(&now_char) {//含有公共左因子
+                if self.terminal.contains(&now_char) {//当前字符为终结符
+                    if mem.entry(v_n.clone()).or_default().contains(&now_char) {//含有公共左因子
                         return Err(());
                     }
-                    this_char_set.insert(now_char.clone());
+                    mem.entry(v_n.clone()).or_default().insert(now_char.clone());
                     ended = true;//不能推出空串
                     break;
                 } else if now_char.is_ascii_uppercase() {//当前字符为非终结符
@@ -89,7 +89,8 @@ impl PushDownAutomatonGrammar {
                     if let Err(_) = self.get_first_set(now_char, mem, search_stack) {
                         return Err(());
                     }
-                    mem[&now_char].iter().filter(|x| *x != EMPTY_SENTENCE_CHAR).for_each(|&x| { this_char_set.insert(x); });//将FIRST(Y)非空加入firstX
+                    mem[&now_char].clone().into_iter().filter(|x| *x != EMPTY_SENTENCE_CHAR)
+                        .for_each(|x| { mem.entry(v_n.clone()).or_default().insert(x); });//将FIRST(Y)非空加入firstX
                     if !mem[&now_char].contains(&EMPTY_SENTENCE_CHAR) {//若Y无法推出空串
                         ended = true;//不能推出空串
                         break;//结束计算
@@ -97,12 +98,58 @@ impl PushDownAutomatonGrammar {
                     //否则继续计算
                 } else { return Err(()); }
                 if !ended {//如果可以推出空串
-                    this_char_set.insert(EMPTY_SENTENCE_CHAR);//均有空产生式 则加入空串
+                    mem.entry(v_n.clone()).or_default().insert(EMPTY_SENTENCE_CHAR);//均有空产生式 则加入空串
                 }
             }
         }
         search_stack.remove(&v_n);
         return Ok(());
     }
-    fn get_follow_set(&self, v_n: char, mem: &mut HashMap<char, HashSet<char>>) -> Result<(), ()> {}
+    fn get_follow_set(&self, v_n: char, mem: &mut HashMap<char, HashSet<char>>, first_set: &HashMap<char, HashSet<char>>, search_stack: &mut HashSet<char>) -> Result<(), ()> {
+        if mem.contains_key(&v_n) && !mem[&v_n].is_empty() && mem[&v_n] != HashSet::from([EMPTY_SENTENCE_CHAR]) {
+            return Ok(());
+        }
+        if search_stack.contains(&v_n) {
+            return Err(());//含左递归
+        }
+        search_stack.insert(v_n.clone());
+        for (from_v_n, production_set) in &self.production_set {
+            for production in production_set {
+                let chars = production.chars().collect::<Vec<_>>();
+                for index in chars.iter().enumerate().filter(|(index, ch)| **ch == v_n).map(|(index, ch)| index) {
+                    if index == chars.len() - 1 {//直接推出空
+                        if let Err(_) = self.get_follow_set(*from_v_n, mem, first_set, search_stack) {//尝试计算FOLLOW(A)
+                            return Err(());
+                        }
+                        mem[from_v_n].clone().into_iter().for_each(|x| { mem[&v_n].insert(x); });//将followA加入followB
+                        continue;
+                    }
+                    let mut ended = false;
+                    for next_chars in chars.iter().skip(index + 1) {
+                        if self.terminal.contains(next_chars) {
+                            ended = true;
+                            mem[&v_n].insert(next_chars.clone());
+                            break;
+                        }else if self.non_terminal.contains(next_chars) {
+                            first_set[next_chars].clone().into_iter().filter(|x|*x!=EMPTY_SENTENCE_CHAR).for_each(|x|{mem[&v_n].insert(x);});
+                            if !first_set[next_chars].contains(&EMPTY_SENTENCE_CHAR){
+                                ended=true;
+                                break;
+                            }
+                        }
+                    }
+                    if !ended{
+                        if let Err(_) = self.get_follow_set(*from_v_n, mem, first_set, search_stack) {//尝试计算FOLLOW(A)
+                            return Err(());
+                        }
+                        mem[from_v_n].clone().into_iter().for_each(|x| { mem[&v_n].insert(x); });//将followA加入followB
+                        continue;
+                    }
+                }
+            }
+        }
+
+        search_stack.remove(&v_n);
+        return Ok(());
+    }
 }

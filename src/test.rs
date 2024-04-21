@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::main_application::main_application;
 use crate::prediction_analyzer::{PredictionAnalyzer, PredictionAnalyzerInput};
+use crate::pushdown_automaton_grammar::PushDownAutomatonGrammar;
 use crate::statics::EMPTY_SENTENCE;
 
 #[test]
@@ -40,4 +41,10 @@ fn test_ll1() {
             println!("{err}");
         }
     };
+}
+
+#[test]
+fn test_first() {
+    let pd = PushDownAutomatonGrammar::build_with_case("A->Ba,B->Cb,C->c".to_string(), 'A');
+    dbg!(pd.unwrap().build_ll1_analyzer());
 }
