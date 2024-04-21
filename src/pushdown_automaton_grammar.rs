@@ -47,19 +47,16 @@ impl PushDownAutomatonGrammar {
     }
     pub fn build_ll1_analyzer(&self) -> Option<PredictionAnalyzer> {
         let (mut first_set, mut follow_set) = (HashMap::new(), HashMap::new());
-        for &v_n in &self.non_terminal {//计算每个非终结符的first_set
+        for &v_n in &self.non_terminal {//递归计算每个非终结符的first_set同时判断是否含有左递归
             if let Err(_) = self.get_first_set(v_n, &mut first_set, &mut HashSet::new()) {
                 return None;
             }
         }
         dbg!(first_set.clone());
-        //计算每个非终结符的follow_set
-        for &v_n in &self.non_terminal {
-            if let Err(_) = self.get_follow_set(v_n, &mut follow_set, &first_set, &mut HashSet::new()) {
-                return None;
-            }
+        //迭代计算每个非终结符的follow_set
+        if let Err(_) = self.get_follow_set(&mut follow_set, &first_set) {
+            return None;
         }
-        dbg!(follow_set.clone());
         //计算select集合
         let mut select_set: HashMap<(char, String), HashSet<char>> = HashMap::new();
         for (left_v_n, production_set) in &self.production_set {
@@ -137,54 +134,60 @@ impl PushDownAutomatonGrammar {
         search_stack.remove(&v_n);
         return Ok(());
     }
-    fn get_follow_set(&self, v_n: char, mem: &mut HashMap<char, HashSet<char>>, first_set: &HashMap<char, HashSet<char>>, search_stack: &mut HashSet<char>) -> Result<(), ()> {
-        if mem.contains_key(&v_n) && !mem[&v_n].is_empty() {
-            return Ok(());
-        }
-        if search_stack.contains(&v_n) {
-            return Ok(());//递归时收敛
-        }
-        search_stack.insert(v_n.clone());
-        if v_n == self.start {
-            mem.entry(v_n).or_default().insert(PredictionAnalyzer::BEGIN_END_CHAR);//对文法开始符号，将语句边界符丢入其中
-        }
-        for (from_v_n, production_set) in &self.production_set {
-            for production in production_set {
-                let chars = production.chars().collect::<Vec<_>>();
-                for index in chars.iter().enumerate().filter(|(index, ch)| **ch == v_n).map(|(index, ch)| index) {
-                    if index == chars.len() - 1 {//直接推出空
-                        if let Err(_) = self.get_follow_set(*from_v_n, mem, first_set, search_stack) {//尝试计算FOLLOW(A)
-                            return Err(());
+    fn get_follow_set(&self, follow_set: &mut HashMap<char, HashSet<char>>, first_set: &HashMap<char, HashSet<char>>) -> Result<(), ()> {
+        follow_set.insert(self.start, HashSet::from([PredictionAnalyzer::BEGIN_END_CHAR]));//FOLLOW(START)=#
+        loop {
+            let mut closed = true;//是否闭合
+            for (left_v_n, production_set) in &self.production_set {
+                for production in production_set {
+                    let chars = production.chars().collect::<Vec<_>>();
+                    for (index, char) in chars.iter().enumerate() {
+                        if !self.non_terminal.contains(char) {//B必须为非终结符
+                            continue;
                         }
-                        mem[from_v_n].clone().into_iter().for_each(|x| { mem.entry(v_n).or_default().insert(x); });//将followA加入followB
-                        continue;
-                    }
-                    let mut ended = false;
-                    for next_chars in chars.iter().skip(index + 1) {
-                        if self.terminal.contains(next_chars) {
-                            ended = true;
-                            mem.entry(v_n).or_default().insert(next_chars.clone());
-                            break;
-                        } else if self.non_terminal.contains(next_chars) {
-                            first_set[next_chars].clone().into_iter().filter(|x| *x != EMPTY_SENTENCE_CHAR).for_each(|x| { mem.entry(v_n).or_default().insert(x); });
-                            if !first_set[next_chars].contains(&EMPTY_SENTENCE_CHAR) {
-                                ended = true;
-                                break;
+                        if index == chars.len() - 1 {//遇到A->αB产生式
+                            let follow_a_set = follow_set.entry(*left_v_n).or_default().clone();
+                            let follow_b_set = follow_set.entry(*char).or_default();
+                            if follow_a_set.is_subset(follow_b_set) {
+                                continue;
+                            }
+                            follow_a_set.into_iter().for_each(|x| { follow_b_set.insert(x); });//将FOLLOW(A)全部加入FOLLOW(B)
+                            closed = false;//集合未闭合
+                        } else { //遇到A->αBβ产生式
+                            let next_char = chars[index + 1];
+                            if self.terminal.contains(&next_char) {//β为终结符
+                                if !follow_set.entry(*char).or_default().contains(&next_char) {
+                                    follow_set.entry(*char).or_default().insert(next_char);//直接加入FOLLOW(B)
+                                    closed = false;
+                                }
+                            } else {
+                                let first_beta_set = first_set[&next_char].clone().into_iter().filter(|x| *x != EMPTY_SENTENCE_CHAR).collect::<HashSet<_>>();
+                                let follow_b_set = follow_set.entry(*char).or_default();
+                                if !first_beta_set.is_subset(follow_b_set) {
+                                    //将所有非空元素加入
+                                    first_beta_set.into_iter().for_each(|x| { follow_b_set.insert(x); });
+                                    closed = false;
+                                }
+
+                                if first_set[&next_char].contains(&EMPTY_SENTENCE_CHAR) {//如果可以推出空串
+                                    //则加入follow(A)
+                                    let follow_a_set = follow_set.entry(*left_v_n).or_default().clone();
+                                    let follow_b_set = follow_set.entry(*char).or_default();
+                                    if !follow_a_set.is_subset(follow_b_set) {
+                                        follow_a_set.into_iter().for_each(|x| { follow_b_set.insert(x); });//将FOLLOW(A)全部加入FOLLOW(B)
+                                        closed = false;
+                                    }
+                                }
                             }
                         }
                     }
-                    if !ended {
-                        if let Err(_) = self.get_follow_set(*from_v_n, mem, first_set, search_stack) {//尝试计算FOLLOW(A)
-                            return Err(());
-                        }
-                        mem[from_v_n].clone().into_iter().for_each(|x| { mem.entry(v_n).or_default().insert(x); });//将followA加入followB
-                        continue;
-                    }
                 }
+            }
+            if closed {
+                break;
             }
         }
 
-        search_stack.remove(&v_n);
-        return Ok(());
+        Ok(())
     }
 }
