@@ -58,7 +58,6 @@ impl PushDownAutomatonGrammar {
         }
         //计算select集合
         let select_set: HashMap<(char, String), HashSet<char>> = self.get_select_set(&first_set, &follow_set);
-        dbg!(first_set.clone(),follow_set.clone(),select_set.clone());
         //判断select集合有无交集
         for left_v_n in &self.non_terminal {
             for (index, i_production) in self.production_set[left_v_n].iter().enumerate() {
@@ -103,7 +102,7 @@ impl PushDownAutomatonGrammar {
                     mem.entry(v_n.clone()).or_default().insert(now_char.clone());
                     ended = true;//不能推出空串
                     break;
-                } else if now_char.is_ascii_uppercase() {//当前字符为非终结符
+                } else if self.non_terminal.contains(&now_char) {//当前字符为非终结符
                     //递归计算当前字符的first集合
                     if let Err(_) = self.get_first_set(now_char, mem, search_stack) {
                         return Err(());
