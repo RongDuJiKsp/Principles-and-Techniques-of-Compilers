@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::stdin;
 use std::ops::Add;
 
 use crate::statics::EMPTY_SENTENCE;
@@ -41,7 +42,6 @@ impl PredictionAnalyzer {
         analyzer_stack.push(self.start_char.clone());
         let mut now_char = to_parse_iter.next().unwrap();//把第一个输入符号读入now_char
         loop {
-            dbg!(pull_down_queue.clone());
             let top_char = analyzer_stack.pop().unwrap();//把栈顶符号弹出，放入x
             if now_char == top_char && top_char == PredictionAnalyzer::BEGIN_END_CHAR {//分析成功
                 pull_down_queue.push("匹配，分析成功".to_string());
@@ -64,6 +64,45 @@ impl PredictionAnalyzer {
                 }
             } else {
                 return err;
+            }
+        }
+    }
+}
+
+pub fn test_sentence_using_prediction_analyzer_cli(pa: &PredictionAnalyzer) {
+    let mut buffer = String::new();
+    let mut is_dbg = true;
+    loop {
+        stdin().read_line(&mut buffer).expect("读取时发生错误！");
+        let mut iter = buffer.trim().chars().peekable();
+        if let Some(front_char) = iter.peek() {
+            if *front_char == '#' {
+                match iter.collect::<String>().as_str() {
+                    "#debug" => {
+                        is_dbg = true;
+                        println!("已切换至输出模式！");
+                    }
+                    "#release" => {
+                        is_dbg = false;
+                        println!("已关闭输出模式！");
+                    }
+                    _ => {
+                        println!("未知的指令！")
+                    }
+                }
+                continue;
+            }
+        }
+        match pa.analyzer(&buffer.trim().to_string()) {
+            Ok(vec) => {
+                println!("该字符串是可接受的");
+                if is_dbg {
+                    println!("解析过程如下：");
+                    vec.into_iter().for_each(|x| println!("{x}"));
+                }
+            }
+            Err(res) => {
+                println!("{res}");
             }
         }
     }

@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::deterministic_finite_automaton::State;
 use crate::prediction_analyzer::{PredictionAnalyzer, PredictionAnalyzerInput};
+use crate::r#type::StringArgs;
 use crate::statics::{EMPTY_SENTENCE, EMPTY_SENTENCE_CHAR, GRAMMAR_SPLIT_TARGET_UNIT, SPLIT_UNITS};
 use crate::utils::split_type_two_grammar;
 
@@ -52,12 +53,14 @@ impl PushDownAutomatonGrammar {
                 return None;
             }
         }
+        dbg!(first_set.clone());
         //迭代计算每个非终结符的follow_set
         if let Err(_) = self.get_follow_set(&mut follow_set, &first_set) {
             return None;
         }
         //计算select集合
         let select_set: HashMap<(char, String), HashSet<char>> = self.get_select_set(&first_set, &follow_set);
+        dbg!(first_set.clone(),follow_set.clone(),select_set.clone());
         //判断select集合有无交集
         for left_v_n in &self.non_terminal {
             for (index, i_production) in self.production_set[left_v_n].iter().enumerate() {
@@ -211,4 +214,24 @@ impl PushDownAutomatonGrammar {
         }
         select_set
     }
+}
+
+pub fn build_push_down_automaton_grammar_with_args(mut args: StringArgs) -> PushDownAutomatonGrammar {
+    let (mut grammar_str, mut start_v_n) = (Default::default(), Default::default());
+    while let Some(mode) = args.next() {
+        if let Some(val) = args.next() {
+            match mode.as_str() {
+                "--grammar" => {
+                    grammar_str = val;
+                }
+                "--start" => {
+                    start_v_n = val.chars().nth(0).unwrap();
+                }
+                _ => {}
+            }
+        } else {
+            panic!("excepted value of param  {mode}");
+        }
+    }
+    PushDownAutomatonGrammar::build_with_case(grammar_str, start_v_n).expect("构建II型文法时发生错误")
 }

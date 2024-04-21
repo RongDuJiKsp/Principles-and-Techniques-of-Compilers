@@ -7,7 +7,7 @@ use crate::statics::EMPTY_SENTENCE;
 
 #[test]
 fn test_args() {
-    let commands = "Compiler.exe  --trans_grammar --grammar S->aS|b --start S".split(" ")
+    let commands = "Compiler.exe --test_ll1 --grammar S->AB|bC,A->b|$,B->aD|$,C->AD|b,D->aS|c --start S".split(" ")
         .into_iter().map(|x| String::from(x)).collect::<Vec<_>>();
     main_application(commands.into_iter());
 }
