@@ -53,6 +53,8 @@ fn test_ll1(args: StringArgs) {
             follow.into_iter().map(|(ch, set)| format!("FOLLOW({ch})={:?}", set)).for_each(|x| println!("{x}"));
             println!("select set 如下");
             select.into_iter().map(|((from, to), set)| format!("SELECT({from}->{to})={:?}", set)).for_each(|x| println!("{x}"));
+            println!("预测分析表如下 ");
+            println!("{ll1_grammar}");
             println!("该文法是LL(1)文法，正在进入shell模式");
             test_sentence_using_prediction_analyzer_cli(&ll1_grammar);
         }

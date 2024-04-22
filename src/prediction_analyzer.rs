@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 use std::io::stdin;
 use std::ops::Add;
 
@@ -66,6 +67,17 @@ impl PredictionAnalyzer {
                 return err;
             }
         }
+    }
+}
+
+impl Display for PredictionAnalyzer {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for (PredictionAnalyzerInput { v_n, v_t }, target) in &self.analyzer_table {
+            if let Err(e) = writeln!(f, "M[{v_n},{v_t}]={v_n}->{target}") {
+                return Err(e);
+            }
+        }
+        Ok(())
     }
 }
 
