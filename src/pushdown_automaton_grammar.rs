@@ -89,7 +89,7 @@ impl PushDownAutomatonGrammar {
             return Ok(());
         }
         if search_stack.contains(&v_n) {
-            return Err("含左递归".to_string());//含左递归
+            return Err(format!("在计算非终结符{v_n} 时发现左递归 递归集合如下 : {:?}", search_stack));//含左递归
         }
         search_stack.insert(v_n.clone());
         for production in &self.production_set[&v_n] {
