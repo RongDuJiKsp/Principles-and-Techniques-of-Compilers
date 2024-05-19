@@ -1,4 +1,4 @@
-use crate::deterministic_finite_automaton::{State, TransFunc};
+use crate::deterministic_finite_automaton::{DeterministicFiniteAutomaton, State, TransFunc};
 use crate::prediction_analyzer::PredictionAnalyzer;
 use crate::pushdown_automaton_grammar::PushDownAutomatonGrammar;
 use crate::regular_grammar::RegularGrammar;
@@ -16,6 +16,10 @@ impl PredictionAnalyzer {
 impl TransFunc {
     pub const UNIT_CHAR: char = '+';
     pub const RESULT_CHAT: char = '=';
+}
+
+impl DeterministicFiniteAutomaton {
+    pub const END_STATE_FLAG: char = '*';
 }
 
 pub const EMPTY_SENTENCE: &'static str = "$";
